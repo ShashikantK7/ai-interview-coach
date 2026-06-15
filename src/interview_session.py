@@ -2,14 +2,77 @@ import streamlit as st
 
 
 def initialize_session():
-    if "questions" not in st.session_state:
-        st.session_state.questions = []
 
-    if "current_question" not in st.session_state:
-        st.session_state.current_question = 0
+    defaults = {
+        "questions": [],
+        "current_question": 0,
+        "feedback_history": [],
+        "answers": [],
+        "scores": [],
+        "interview_started": False,
+        "interview_completed": False
+    }
 
-    if "feedback_history" not in st.session_state:
-        st.session_state.feedback_history = []
+    for key, value in defaults.items():
+        if key not in st.session_state:
+            st.session_state[key] = value
 
-    if "interview_started" not in st.session_state:
-        st.session_state.interview_started = False
+
+def reset_session():
+
+    st.session_state.questions = []
+    st.session_state.current_question = 0
+    st.session_state.feedback_history = []
+    st.session_state.answers = []
+    st.session_state.scores = []
+    st.session_state.interview_started = False
+    st.session_state.interview_completed = False
+
+
+def get_progress():
+
+    total = len(st.session_state.questions)
+
+    if total == 0:
+        return 0
+
+    return st.session_state.current_question / total
+
+
+def is_last_question():
+
+    return (
+        st.session_state.current_question
+        >= len(st.session_state.questions) - 1
+    )
+
+
+def average_score():
+
+    if not st.session_state.scores:
+        return 0
+
+    return round(
+        sum(st.session_state.scores)
+        / len(st.session_state.scores),
+        2
+    )
+
+
+def questions_completed():
+
+    return len(st.session_state.scores)
+
+
+def total_questions():
+
+    return len(st.session_state.questions)
+
+
+def interview_finished():
+
+    return (
+        len(st.session_state.questions) > 0
+        and len(st.session_state.scores)
+        == len(st.session_state.questions)
+    )

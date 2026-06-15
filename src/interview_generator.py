@@ -1,59 +1,83 @@
-import streamlit as st
+from langchain_google_genai import ChatGoogleGenerativeAI
+from google.api_core.exceptions import ResourceExhausted
 
 
-def initialize_session():
+def generate_questions(skills_text, api_key):
 
-    defaults = {
-        "questions": [],
-        "current_question": 0,
-        "feedback_history": [],
-        "answers": [],
-        "scores": [],
-        "interview_started": False,
-        "interview_completed": False
-    }
-
-    for key, value in defaults.items():
-        if key not in st.session_state:
-            st.session_state[key] = value
-
-
-def reset_session():
-
-    st.session_state.questions = []
-    st.session_state.current_question = 0
-    st.session_state.feedback_history = []
-    st.session_state.answers = []
-    st.session_state.scores = []
-    st.session_state.interview_started = False
-    st.session_state.interview_completed = False
-
-
-def get_progress():
-
-    total = len(st.session_state.questions)
-
-    if total == 0:
-        return 0
-
-    return st.session_state.current_question / total
-
-
-def is_last_question():
-
-    return (
-        st.session_state.current_question
-        >= len(st.session_state.questions) - 1
+    llm = ChatGoogleGenerativeAI(
+        model="gemini-3.5-flash",
+        google_api_key=api_key,
+        temperature=0.3
     )
 
+    prompt = f"""
+    You are an experienced technical interviewer.
 
-def average_score():
+    Candidate skills:
 
-    if not st.session_state.scores:
-        return 0
+    {skills_text}
 
-    return round(
-        sum(st.session_state.scores)
-        / len(st.session_state.scores),
-        2
+    Generate:
+
+    1. Beginner interview questions
+    2. Intermediate interview questions
+    3. Advanced interview questions
+    4. Behavioral interview questions
+
+    Return clean markdown.
+    """
+
+    try:
+        response = llm.invoke(prompt)
+        return response.content
+
+    except ResourceExhausted:
+        return "Gemini API rate limit reached. Please try again in a minute."
+
+    except Exception as e:
+        return f"Error generating questions: {str(e)}"
+
+
+def generate_session_questions(skills_text, api_key):
+
+    llm = ChatGoogleGenerativeAI(
+        model="gemini-3.5-flash",
+        google_api_key=api_key,
+        temperature=0.4
     )
+
+    prompt = f"""
+    You are a senior technical interviewer.
+
+    Candidate skills:
+
+    {skills_text}
+
+    Generate EXACTLY 5 interview questions.
+
+    Requirements:
+    - One question per line
+    - No numbering
+    - No explanations
+    """
+
+    try:
+        response = llm.invoke(prompt)
+
+        questions = [
+            q.strip()
+            for q in response.content.split("\n")
+            if q.strip()
+        ]
+
+        return questions[:5]
+
+    except ResourceExhausted:
+        return [
+            "Gemini API rate limit reached. Please try again later."
+        ]
+
+    except Exception as e:
+        return [
+            f"Error generating questions: {str(e)}"
+        ]

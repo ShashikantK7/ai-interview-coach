@@ -1,103 +1,59 @@
-from langchain_google_genai import ChatGoogleGenerativeAI
-from google.api_core.exceptions import ResourceExhausted
+import streamlit as st
 
 
-def generate_questions(skills_text, api_key):
-    """
-    Existing Phase 3 feature:
-    Generate categorized interview questions.
-    """
+def initialize_session():
 
-    llm = ChatGoogleGenerativeAI(
-        model="gemini-3.5-flash",
-        google_api_key=api_key,
-        temperature=0.3
+    defaults = {
+        "questions": [],
+        "current_question": 0,
+        "feedback_history": [],
+        "answers": [],
+        "scores": [],
+        "interview_started": False,
+        "interview_completed": False
+    }
+
+    for key, value in defaults.items():
+        if key not in st.session_state:
+            st.session_state[key] = value
+
+
+def reset_session():
+
+    st.session_state.questions = []
+    st.session_state.current_question = 0
+    st.session_state.feedback_history = []
+    st.session_state.answers = []
+    st.session_state.scores = []
+    st.session_state.interview_started = False
+    st.session_state.interview_completed = False
+
+
+def get_progress():
+
+    total = len(st.session_state.questions)
+
+    if total == 0:
+        return 0
+
+    return st.session_state.current_question / total
+
+
+def is_last_question():
+
+    return (
+        st.session_state.current_question
+        >= len(st.session_state.questions) - 1
     )
 
-    prompt = f"""
-    You are an experienced technical interviewer.
 
-    Candidate skills:
+def average_score():
 
-    {skills_text}
+    if not st.session_state.scores:
+        return 0
 
-    Generate:
-
-    1. Beginner interview questions
-    2. Intermediate interview questions
-    3. Advanced interview questions
-    4. Behavioral interview questions
-
-    Return clean markdown.
-    """
-
-    try:
-        response = llm.invoke(prompt)
-        return response.content
-
-    except ResourceExhausted:
-        return "Gemini API rate limit reached. Please try again in a minute."
-
-    except Exception as e:
-        return f"Error generating questions: {str(e)}"
-
-
-def generate_session_questions(skills_text, api_key):
-    """
-    Phase 4.3:
-    Generate exactly 5 interview questions
-    for a guided mock interview session.
-    """
-
-    llm = ChatGoogleGenerativeAI(
-        model="gemini-3.5-flash",
-        google_api_key=api_key,
-        temperature=0.4
+    return round(
+        sum(st.session_state.scores)
+        / len(st.session_state.scores),
+        2
     )
-
-    prompt = f"""
-    You are a senior technical interviewer.
-
-    Candidate skills:
-
-    {skills_text}
-
-    Generate EXACTLY 5 interview questions.
-
-    Requirements:
-    - Questions should be relevant to the candidate skills.
-    - Mix beginner, intermediate, advanced, and behavioral questions.
-    - One question per line.
-    - Do NOT include numbering.
-    - Do NOT include explanations.
-    - Output only the questions.
-
-    Example:
-
-    What is overfitting in machine learning?
-    Explain the difference between Random Forest and XGBoost.
-    How does backpropagation work?
-    Describe a challenging project you worked on.
-    How would you deploy a machine learning model to production?
-    """
-
-    try:
-        response = llm.invoke(prompt)
-
-        questions = [
-            q.strip()
-            for q in response.content.split("\n")
-            if q.strip()
-        ]
-
-        return questions[:5]
-
-    except ResourceExhausted:
-        return [
-            "Gemini API rate limit reached. Please try again in a minute."
-        ]
-
-    except Exception as e:
-        return [
-            f"Error generating interview session: {str(e)}"
-        ]

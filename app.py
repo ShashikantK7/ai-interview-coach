@@ -1,16 +1,22 @@
 import streamlit as st
+
 from src.config import GOOGLE_API_KEY
 from src.resume_parser import extract_resume_text
 from src.ats_analyzer import analyze_resume
 from src.skills_extractor import extract_skills
+from src.interview_generator import generate_questions
+
 
 st.set_page_config(
     page_title="AI Interview Coach",
-    page_icon="🎯"
+    page_icon="🎯",
+    layout="wide"
 )
 
 st.title("🎯 AI Interview Coach")
-st.caption("Upload your resume and compare it against a job description")
+st.caption(
+    "Upload your resume, compare it with a job description, and generate interview questions."
+)
 
 if not GOOGLE_API_KEY:
     st.error("Google API key not configured.")
@@ -45,8 +51,12 @@ if resume_file and job_description:
 
     st.success("Analysis complete!")
 
-    tab1, tab2 = st.tabs(
-        ["ATS Analysis", "Extracted Skills"]
+    tab1, tab2, tab3 = st.tabs(
+        [
+            "ATS Analysis",
+            "Extracted Skills",
+            "Interview Questions"
+        ]
     )
 
     with tab1:
@@ -56,3 +66,21 @@ if resume_file and job_description:
     with tab2:
         st.subheader("Skills Found In Resume")
         st.markdown(extracted_skills)
+
+    with tab3:
+        st.subheader("Interview Questions")
+
+        st.info(
+            "Generate personalized interview questions based on your resume skills."
+        )
+
+        if st.button("Generate Interview Questions"):
+
+            with st.spinner("Generating interview questions..."):
+
+                questions = generate_questions(
+                    extracted_skills,
+                    GOOGLE_API_KEY
+                )
+
+            st.markdown(questions)

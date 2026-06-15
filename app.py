@@ -5,7 +5,7 @@ from src.resume_parser import extract_resume_text
 from src.ats_analyzer import analyze_resume
 from src.skills_extractor import extract_skills
 from src.interview_generator import generate_questions
-
+from src.mock_interviewer import generate_interview_response
 
 st.set_page_config(
     page_title="AI Interview Coach",
@@ -15,7 +15,7 @@ st.set_page_config(
 
 st.title("🎯 AI Interview Coach")
 st.caption(
-    "Upload your resume, compare it with a job description, and generate interview questions."
+    "Upload your resume, compare it with a job description, generate interview questions, and practice answers."
 )
 
 if not GOOGLE_API_KEY:
@@ -51,11 +51,12 @@ if resume_file and job_description:
 
     st.success("Analysis complete!")
 
-    tab1, tab2, tab3 = st.tabs(
+    tab1, tab2, tab3, tab4 = st.tabs(
         [
             "ATS Analysis",
             "Extracted Skills",
-            "Interview Questions"
+            "Interview Questions",
+            "Mock Interview"
         ]
     )
 
@@ -70,17 +71,36 @@ if resume_file and job_description:
     with tab3:
         st.subheader("Interview Questions")
 
-        st.info(
-            "Generate personalized interview questions based on your resume skills."
-        )
-
         if st.button("Generate Interview Questions"):
-
             with st.spinner("Generating interview questions..."):
-
                 questions = generate_questions(
                     extracted_skills,
                     GOOGLE_API_KEY
                 )
-
             st.markdown(questions)
+
+    with tab4:
+        st.subheader("Mock Interview Practice")
+
+        question = st.text_input(
+            "Interview Question",
+            placeholder="What is overfitting in machine learning?"
+        )
+
+        answer = st.text_area(
+            "Your Answer",
+            height=180
+        )
+
+        if st.button("Evaluate Answer"):
+            if question and answer:
+                with st.spinner("Evaluating answer..."):
+                    feedback = generate_interview_response(
+                        question,
+                        answer,
+                        GOOGLE_API_KEY
+                    )
+
+                st.markdown(feedback)
+            else:
+                st.warning("Please enter both a question and an answer.")
